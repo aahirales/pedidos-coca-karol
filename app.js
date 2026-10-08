@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v6.0';
+const APP_VERSION='v6.1';
 const KEY='karol_coca_state_v1';const $=s=>document.querySelector(s);const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const now=()=>new Date().toLocaleString('es-MX');
 const normalize=x=>String(x??'').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
@@ -61,14 +61,26 @@ async function scanBarcode(setCode){
   let formats=['ean_13','ean_8','upc_a','upc_e','code_128'];
   if(BarcodeDetector.getSupportedFormats){const supported=await BarcodeDetector.getSupportedFormats();formats=formats.filter(x=>supported.includes(x));}
   const detector=new BarcodeDetector(formats.length?{formats}:undefined);
-  modal('<h2>Escanear código</h2><video id="scanVideo" autoplay muted playsinline style="width:100%;border-radius:12px;background:#111"></video><p class="sub">Apunta al código de barras y mantenlo dentro de la imagen.</p><p id="scanStatus" class="sub">Preparando cámara…</p>');
-  const video=$('#scanVideo'),dialog=$('#modal'),status=$('#scanStatus');video.srcObject=stream;video.muted=true;video.setAttribute('playsinline','');
-  const stop=()=>{running=false;stream?.getTracks().forEach(t=>t.stop());};dialog.addEventListener('close',stop,{once:true});
-  await new Promise((resolve,reject)=>{if(video.readyState>=1&&video.videoWidth)resolve();else{const timer=setTimeout(()=>reject(Error('La cámara no entregó imagen a tiempo.')),10000);video.addEventListener('loadedmetadata',()=>{clearTimeout(timer);resolve()},{once:true})}});
+  modal('<h2>Escanear código</h2><video id="scanVideo" autoplay muted playsinline style="width:100%;border-radius:12px;background:#111"></video><canvas id="scanCanvas" style="display:none"></canvas><p class="sub">Apunta al código de barras y mantenlo dentro de la imagen.</p><p id="scanStatus" class="sub">Preparando cámara…</p>');
+  const video=$('#scanVideo'),canvas=$('#scanCanvas'),dialog=$('#modal'),status=$('#scanStatus');
+  video.srcObject=stream; video.muted=true; video.setAttribute('playsinline','');
+  const stop=()=>{running=false;stream?.getTracks().forEach(t=>t.stop());}; dialog.addEventListener('close',stop,{once:true});
   await video.play();
+  const deadline=Date.now()+12000;
+  while((video.readyState<2||!video.videoWidth||!video.videoHeight)&&Date.now()<deadline) await new Promise(r=>setTimeout(r,100));
+  if(!video.videoWidth||!video.videoHeight) throw Error('La cámara no entregó una imagen válida.');
+  const ctx=canvas.getContext('2d',{willReadFrequently:true}); status.textContent='Buscando código…';
   while(running&&dialog.open){
-   if(!busy&&video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0){busy=true;try{const codes=await detector.detect(video);if(codes?.length){const code=String(codes[0].rawValue||'').trim();if(code){stop();closeModal();setCode(code);return}}if(status)status.textContent='Buscando código…';}catch(err){if(status)status.textContent='Buscando código…';}finally{busy=false}}
-   await new Promise(r=>setTimeout(r,180));
+   if(!busy&&video.readyState>=2&&video.videoWidth>0&&video.videoHeight>0){
+    busy=true;
+    try{
+     canvas.width=video.videoWidth; canvas.height=video.videoHeight; ctx.drawImage(video,0,0,canvas.width,canvas.height);
+     const codes=await detector.detect(canvas);
+     if(codes?.length){const code=String(codes[0].rawValue||'').trim();if(code){stop();closeModal();setCode(code);return}}
+    }catch(err){status.textContent='Buscando código…';}
+    finally{busy=false}
+   }
+   await new Promise(r=>setTimeout(r,220));
   }
  }catch(e){alert('No se pudo usar la cámara: '+(e?.message||e))}finally{running=false;stream?.getTracks().forEach(t=>t.stop())}
 }
