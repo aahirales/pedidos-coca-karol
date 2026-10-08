@@ -1,0 +1,8 @@
+PEDIDOS COCA-COLA KAROL V6.3 — CONFIGURADA
+
+La URL y clave publicable de Supabase ya estan incluidas en cloud-config.js.
+Subir todos los archivos de este ZIP a la raiz del repositorio GitHub Pages.
+Cada empleado inicia sesion con su cuenta autorizada.
+NO subir respaldos con pedidos ni contrasenas. NO usar claves secret/service_role.
+NO publicar de nuevo el catalogo inicial (321 productos ya registrados).
+No borrar los datos locales hasta verificar fotos y cambios pendientes.

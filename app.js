@@ -1,5 +1,5 @@
 'use strict';
-const APP_VERSION='v6.2';
+const APP_VERSION='v6.3';
 const KEY='karol_coca_state_v1';const $=s=>document.querySelector(s);const esc=x=>String(x??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 const now=()=>new Date().toLocaleString('es-MX');
 const normalize=x=>String(x??'').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
